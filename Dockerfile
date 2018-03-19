@@ -1,8 +1,13 @@
 FROM golang:1.9.4
 WORKDIR /go/src/github.com/cgilling/pprof-me
 RUN CGO_ENABLED=0 GOOS=linux go get github.com/google/pprof
-COPY *.go .
-RUN go get -d -v ./...
+RUN go get -d -v \
+				 github.com/julienschmidt/httprouter \
+				 github.com/kelseyhightower/envconfig \
+				 github.com/kennygrant/sanitize \
+				 github.com/pborman/uuid
+COPY *.go ./
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o pprof-me .
 
 FROM alpine:latest  

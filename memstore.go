@@ -5,6 +5,18 @@ import (
 	"sync"
 )
 
+type ProfileStore interface {
+	StoreProfile(id string, profile []byte) error
+	StoreSymbols(id string, symbols []byte) error
+	StoreBinary(md5sum string, binary []byte) error
+	StoreBinaryMD5(id, name, md5 string) error
+	GetProfile(id string) (profile []byte, err error)
+	GetBinary(id string) (name string, binary []byte, err error)
+	GetSymbols(id string) (symbols []byte, err error)
+	HasBinaryMD5(md5 string) bool
+	HasSymbols(id string) bool
+}
+
 type MemStore struct {
 	mu       sync.RWMutex
 	profiles map[string][]byte
