@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -24,8 +23,8 @@ type PProfInstance struct {
 	isActive int64
 }
 
-func NewPProfInstance(ctx context.Context, pprofProfileURL, pathPrefix, id string, port int, profiles ProfileStore) (*PProfInstance, error) {
-	runner, err := NewPProfRunner(ctx, pprofProfileURL, port, id, profiles)
+func NewPProfInstance(pprofProfileURL, pathPrefix, id string, port int, profiles ProfileStore) (*PProfInstance, error) {
+	runner, err := NewPProfRunner(pprofProfileURL, port, id, profiles)
 	if err != nil {
 		return nil, err
 	}
@@ -73,14 +72,14 @@ type PProfRunner struct {
 	TmpDirPath string
 }
 
-func NewPProfRunner(ctx context.Context, pprofProfileURL string, port int, id string, profiles ProfileStore) (*PProfRunner, error) {
+func NewPProfRunner(pprofProfileURL string, port int, id string, profiles ProfileStore) (*PProfRunner, error) {
 	tmpDirPath, err := ioutil.TempDir("", fmt.Sprintf("pprof-me-%s", id))
 	if err != nil {
 		return nil, err
 	}
 	cmd, err := func() (*exec.Cmd, error) {
 		if profiles.HasSymbols(id) {
-			return exec.CommandContext(ctx, "pprof", "-symbolize=remote", fmt.Sprintf("-http=127.0.0.1:%d", port), pprofProfileURL), nil
+			return exec.Command("pprof", "-symbolize=remote", fmt.Sprintf("-http=127.0.0.1:%d", port), pprofProfileURL), nil
 		} else {
 			name, binary, err := profiles.GetBinary(id)
 			if err != nil {
@@ -101,7 +100,7 @@ func NewPProfRunner(ctx context.Context, pprofProfileURL string, port int, id st
 			if err != nil {
 				return nil, err
 			}
-			return exec.CommandContext(ctx, "pprof", fmt.Sprintf("-http=127.0.0.1:%d", port), binPath, profilePath), nil
+			return exec.Command("pprof", fmt.Sprintf("-http=127.0.0.1:%d", port), binPath, profilePath), nil
 		}
 	}()
 	if err != nil {

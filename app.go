@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cgilling/pprof-me/msg"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pborman/uuid"
 )
@@ -54,7 +55,7 @@ func NewApp(c Config) *App {
 	}
 	router.PUT("/binaries/:md5", app.BinaryPUT)
 	router.POST("/profiles", app.ProfilePOST)
-	router.GET("/profiles/:id", app.ProfileIDGET)
+	router.GET("/profiles/:id", app.PProfProfileGET)
 	router.GET("/profiles/:id/web/*subpath", app.ProfileProxy)
 	router.PUT("/profiles/:id/web/*subpath", app.ProfileProxy)
 	router.POST("/profiles/:id/web/*subpath", app.ProfileProxy)
@@ -76,20 +77,8 @@ func (app *App) Shutdown(ctx context.Context) error {
 	return err
 }
 
-type ProfilePostRequest struct {
-	Profile       []byte `json:"profile"`
-	BinaryName    string `json:"binary_name"`
-	BinaryMD5     string `json:"binary_md5"`
-	SymoblizerURL string `json:"symbolizer_url"`
-}
-
-type ProfilePostResponse struct {
-	ID                string `json:"id"`
-	BinaryNeedsUpload bool   `json:"binary_needs_upload"`
-}
-
 func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var req ProfilePostRequest
+	var req msg.ProfilePostRequest
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&req)
 	if err != nil {
@@ -102,7 +91,7 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 		fmt.Fprintf(w, `at least one of "binary_md5" or "symbolizer_url" required`)
 		return
 	}
-	var resp ProfilePostResponse
+	var resp msg.ProfilePostResponse
 	resp.ID = uuid.New()
 	if req.BinaryMD5 != "" {
 		err = app.profiles.StoreBinaryMD5(resp.ID, req.BinaryName, req.BinaryMD5)
@@ -135,7 +124,9 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 		app.symbolizerURLs[resp.ID] = url
 		app.symbolizerURLsMu.Unlock()
 
-		// NOTE: we make this call because it will exit without any human interaction
+		// NOTE: we make this call (-top) because it will exit without any human interaction, therefore we
+		//       know that when this command exits, the appropriate calls to get the symbols will have
+		//       been called and we will have saved the symbols to the profile store.
 		cmd := exec.Command("pprof", "-top", fmt.Sprintf("http://%s/profiles/%s/debug/pprof/profile", app.config.ListenAddr, resp.ID))
 		err = cmd.Run()
 
@@ -145,12 +136,9 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 			return
 		}
 	}
-
+	w.WriteHeader(201)
 	enc := json.NewEncoder(w)
 	enc.Encode(resp)
-}
-
-func (app *App) ProfileIDGET(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func (app *App) ProfileProxy(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -161,7 +149,6 @@ func (app *App) ProfileProxy(w http.ResponseWriter, r *http.Request, ps httprout
 	if !ok {
 		inst, err =
 			NewPProfInstance(
-				context.TODO(),
 				fmt.Sprintf("http://%s/profiles/%s/debug/pprof/profile", app.config.ListenAddr, id),
 				fmt.Sprintf("/profiles/%s/web/", id),
 				id, app.nextInstancePort, app.profiles)
