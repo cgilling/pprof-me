@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cgilling/pprof-me/httpmock"
 	"github.com/cgilling/pprof-me/msg"
+	"github.com/dankinder/httpmock"
 	"github.com/stretchr/testify/mock"
 )
 
