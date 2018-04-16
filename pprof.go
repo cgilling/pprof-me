@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -28,22 +27,11 @@ func NewPProfInstance(pprofProfileURL, pathPrefix, id string, port int, profiles
 	if err != nil {
 		return nil, err
 	}
-	url, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", port))
+	url, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/ui", port))
 	if err != nil {
 		return nil, err
 	}
 	rp := httputil.NewSingleHostReverseProxy(url)
-	rp.ModifyResponse = func(resp *http.Response) error {
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-		newb := bytes.Replace(b, []byte(`href="/`), []byte(fmt.Sprintf(`href="%s`, pathPrefix)), -1)
-		newb = bytes.Replace(newb, []byte(`new URL("/`), []byte(fmt.Sprintf(`new URL("%s`, pathPrefix)), -1)
-		resp.Body = ioutil.NopCloser(bytes.NewReader(newb))
-		return nil
-	}
 	go runner.Run()
 	return &PProfInstance{
 		handler: http.StripPrefix(pathPrefix, rp),
