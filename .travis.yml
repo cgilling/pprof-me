@@ -1,0 +1,8 @@
+language: go
+
+env:
+  - PATH=$PATH:$GOPATH/bin
+
+install:
+  - go get -t ./...
+  - go get github.com/google/pprof
