@@ -3,9 +3,12 @@ package app
 import (
 	"fmt"
 	"sync"
+
+	"github.com/cgilling/pprof-me/msg"
 )
 
 type ProfileStore interface {
+	ListProfiles() ([]msg.ProfileInfo, error)
 	StoreProfile(id string, profile []byte) error
 	StoreSymbols(id string, symbols []byte) error
 	StoreBinary(md5sum string, binary []byte) error
@@ -37,6 +40,16 @@ func NewMemStore() *MemStore {
 type binInfo struct {
 	BinaryName string
 	MD5        string
+}
+
+func (ms *MemStore) ListProfiles() ([]msg.ProfileInfo, error) {
+	var resp []msg.ProfileInfo
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+	for id := range ms.profiles {
+		resp = append(resp, msg.ProfileInfo{ID: id})
+	}
+	return resp, nil
 }
 
 func (ms *MemStore) StoreProfile(id string, profile []byte) error {

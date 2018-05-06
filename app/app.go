@@ -56,6 +56,7 @@ func New(c Config) *App {
 	}
 	router.PUT("/binaries/:md5", app.BinaryPUT)
 	router.POST("/profiles", app.ProfilePOST)
+	router.GET("/profiles", app.ProfileList)
 	router.GET("/profiles/:id", app.PProfProfileGET)
 	router.GET("/profiles/:id/web/*subpath", app.ProfileProxy)
 	router.PUT("/profiles/:id/web/*subpath", app.ProfileProxy)
@@ -76,6 +77,21 @@ func (app *App) Shutdown(ctx context.Context) error {
 		inst.runner.Close()
 	}
 	return err
+}
+
+func (app *App) ProfileList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var resp msg.ProfileListResponse
+	resp.Profiles, err = app.profiles.ListProfiles()
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "failed to ListProfiles: %v", err)
+		return
+	}
+
+	w.WriteHeader(200)
+	enc := json.NewEncoder(w)
+	enc.Encode(resp)
 }
 
 func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
