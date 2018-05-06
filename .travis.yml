@@ -2,7 +2,10 @@ language: go
 
 env:
   - PATH=$PATH:$GOPATH/bin
-
+before_install:
+  - go get github.com/mattn/goveralls
 install:
   - go get -t ./...
   - go get github.com/google/pprof
+script:
+  - $GOPATH/bin/goveralls -service=travis-ci
