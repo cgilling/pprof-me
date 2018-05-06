@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -25,9 +25,10 @@ type Config struct {
 }
 
 type App struct {
+	Server *http.Server
+
 	config Config
 	router *httprouter.Router
-	server *http.Server
 
 	profiles ProfileStore
 
@@ -39,7 +40,7 @@ type App struct {
 	nextInstancePort int
 }
 
-func NewApp(c Config) *App {
+func New(c Config) *App {
 	router := httprouter.New()
 	app := &App{
 		router:           router,
@@ -48,7 +49,7 @@ func NewApp(c Config) *App {
 		nextInstancePort: 8888,
 		profiles:         NewMemStore(),
 		symbolizerURLs:   make(map[string]*url.URL),
-		server: &http.Server{
+		Server: &http.Server{
 			Addr:    c.ListenAddr,
 			Handler: router,
 		},
@@ -66,11 +67,11 @@ func NewApp(c Config) *App {
 }
 
 func (app *App) ListenAndServe() error {
-	return app.server.ListenAndServe()
+	return app.Server.ListenAndServe()
 }
 
 func (app *App) Shutdown(ctx context.Context) error {
-	err := app.server.Shutdown(ctx)
+	err := app.Server.Shutdown(ctx)
 	for _, inst := range app.instances {
 		inst.runner.Close()
 	}

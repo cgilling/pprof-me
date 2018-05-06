@@ -8,16 +8,17 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/cgilling/pprof-me/app"
 	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
-	var config Config
+	var config app.Config
 	err := envconfig.Process("PPROF_ME", &config)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	app := NewApp(config)
+	app := app.New(config)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt)
