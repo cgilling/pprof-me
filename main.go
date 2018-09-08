@@ -16,9 +16,12 @@ func main() {
 	var config app.Config
 	err := envconfig.Process("PPROF_ME", &config)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
-	app := app.New(config)
+	app, err := app.New(config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt)

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -25,7 +26,8 @@ type Config struct {
 }
 
 type App struct {
-	Server *http.Server
+	listener net.Listener
+	Server   *http.Server
 
 	config Config
 	router *httprouter.Router
@@ -40,7 +42,12 @@ type App struct {
 	nextInstancePort int
 }
 
-func New(c Config) *App {
+func New(c Config) (*App, error) {
+	ln, err := net.Listen("tcp", c.ListenAddr)
+	if err != nil {
+		return nil, err
+	}
+	c.ListenAddr = ln.Addr().String()
 	router := httprouter.New()
 	app := &App{
 		router:           router,
@@ -49,8 +56,8 @@ func New(c Config) *App {
 		nextInstancePort: 8888,
 		profiles:         NewMemStore(),
 		symbolizerURLs:   make(map[string]*url.URL),
+		listener:         ln,
 		Server: &http.Server{
-			Addr:    c.ListenAddr,
 			Handler: router,
 		},
 	}
@@ -64,11 +71,15 @@ func New(c Config) *App {
 	router.POST("/profiles/:id/debug/pprof/symbol", app.PProfSymbolPOST)
 	router.GET("/profiles/:id/debug/pprof/profile", app.PProfProfileGET)
 
-	return app
+	return app, nil
 }
 
 func (app *App) ListenAndServe() error {
-	return app.Server.ListenAndServe()
+	return app.Server.Serve(app.listener)
+}
+
+func (app *App) Addr() string {
+	return app.config.ListenAddr
 }
 
 func (app *App) Shutdown(ctx context.Context) error {

@@ -18,10 +18,11 @@ import (
 )
 
 func TestCPUHeaderWithSymbolizer(t *testing.T) {
-	// TODO: figure out how we to make this a server assigned addr
-	//       rather than hard-coded
-	config := app.Config{ListenAddr: "127.0.0.1:8000"}
-	a := app.New(config)
+	config := app.Config{}
+	a, err := app.New(config)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
 	go a.ListenAndServe()
 	defer a.Shutdown(context.Background())
 	time.Sleep(time.Second)
@@ -31,7 +32,7 @@ func TestCPUHeaderWithSymbolizer(t *testing.T) {
 		b := 2
 		fmt.Fprintf(w, "a + b = %v\n", a+b)
 	})
-	c, err := client.New("http://"+a.Server.Addr, nil)
+	c, err := client.New("http://"+a.Addr(), nil)
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -54,7 +55,7 @@ func TestCPUHeaderWithSymbolizer(t *testing.T) {
 		t.Fatalf("return code from test endpoint not as expected: exp: %d, got: %d", exp, got)
 	}
 
-	sbase := sling.New().Base("http://127.0.0.1:8000")
+	sbase := sling.New().Base("http://" + a.Addr())
 
 	var lresp msg.ProfileListResponse
 	resp, err = sbase.New().Get("profiles").ReceiveSuccess(&lresp)
