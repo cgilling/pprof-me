@@ -1,0 +1,13 @@
+package: github.com/cgilling/pprof-me
+import:
+- package: github.com/dghubble/sling
+- package: github.com/julienschmidt/httprouter
+- package: github.com/kelseyhightower/envconfig
+- package: github.com/kennygrant/sanitize
+- package: github.com/pborman/uuid
+testImport:
+- package: github.com/PuerkitoBio/goquery
+- package: github.com/dankinder/httpmock
+- package: github.com/stretchr/testify
+  subpackages:
+  - mock

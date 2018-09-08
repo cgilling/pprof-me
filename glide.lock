@@ -1,0 +1,46 @@
+hash: 1be588fd82242d028479eacc82437148196fdfeb5bd6b84c0eff2033acaa7f4c
+updated: 2018-09-08T15:17:34.152628675-07:00
+imports:
+- name: github.com/dghubble/sling
+  version: c519674860ff275e0ceb12caf5d87b31765c4e71
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
+- name: github.com/google/uuid
+  version: e704694aed0ea004bb7eb1fc2e911d048a54606a
+- name: github.com/julienschmidt/httprouter
+  version: 348b672cd90d8190f8240323e372ecd1e66b59dc
+- name: github.com/kelseyhightower/envconfig
+  version: dd1402a4d99de9ac2f396cd6fcb957bc2c695ec1
+- name: github.com/kennygrant/sanitize
+  version: 06ec0d0dbcd497d01e5189b16f5263f712e61a8e
+- name: github.com/pborman/uuid
+  version: adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1
+- name: golang.org/x/net
+  version: 161cd47e91fd58ac17490ef4d742dc98bb4cf60e
+  subpackages:
+  - html
+  - html/atom
+testImports:
+- name: github.com/andybalholm/cascadia
+  version: 901648c87902174f774fac311d7f176f8647bdaa
+- name: github.com/dankinder/httpmock
+  version: d60e3dc270c131fe0721dcc7f77db7f480bd76d9
+- name: github.com/davecgh/go-spew
+  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/PuerkitoBio/goquery
+  version: dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2
+- name: github.com/stretchr/objx
+  version: ef50b0de28773081167c97fc27cf29a0bf8b8c71
+- name: github.com/stretchr/testify
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  subpackages:
+  - assert
+  - mock
