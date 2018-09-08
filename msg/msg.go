@@ -11,3 +11,11 @@ type ProfilePostResponse struct {
 	ID                string `json:"id"`
 	BinaryNeedsUpload bool   `json:"binary_needs_upload"`
 }
+
+type ProfileListResponse struct {
+	Profiles []ProfileInfo `json:"profiles"`
+}
+
+type ProfileInfo struct {
+	ID string `json:"id"`
+}

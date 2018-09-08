@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -25,9 +26,11 @@ type Config struct {
 }
 
 type App struct {
+	listener net.Listener
+	Server   *http.Server
+
 	config Config
 	router *httprouter.Router
-	server *http.Server
 
 	profiles ProfileStore
 
@@ -39,7 +42,12 @@ type App struct {
 	nextInstancePort int
 }
 
-func NewApp(c Config) *App {
+func New(c Config) (*App, error) {
+	ln, err := net.Listen("tcp", c.ListenAddr)
+	if err != nil {
+		return nil, err
+	}
+	c.ListenAddr = ln.Addr().String()
 	router := httprouter.New()
 	app := &App{
 		router:           router,
@@ -48,13 +56,14 @@ func NewApp(c Config) *App {
 		nextInstancePort: 8888,
 		profiles:         NewMemStore(),
 		symbolizerURLs:   make(map[string]*url.URL),
-		server: &http.Server{
-			Addr:    c.ListenAddr,
+		listener:         ln,
+		Server: &http.Server{
 			Handler: router,
 		},
 	}
 	router.PUT("/binaries/:md5", app.BinaryPUT)
 	router.POST("/profiles", app.ProfilePOST)
+	router.GET("/profiles", app.ProfileList)
 	router.GET("/profiles/:id", app.PProfProfileGET)
 	router.GET("/profiles/:id/web/*subpath", app.ProfileProxy)
 	router.PUT("/profiles/:id/web/*subpath", app.ProfileProxy)
@@ -62,19 +71,38 @@ func NewApp(c Config) *App {
 	router.POST("/profiles/:id/debug/pprof/symbol", app.PProfSymbolPOST)
 	router.GET("/profiles/:id/debug/pprof/profile", app.PProfProfileGET)
 
-	return app
+	return app, nil
 }
 
 func (app *App) ListenAndServe() error {
-	return app.server.ListenAndServe()
+	return app.Server.Serve(app.listener)
+}
+
+func (app *App) Addr() string {
+	return app.config.ListenAddr
 }
 
 func (app *App) Shutdown(ctx context.Context) error {
-	err := app.server.Shutdown(ctx)
+	err := app.Server.Shutdown(ctx)
 	for _, inst := range app.instances {
 		inst.runner.Close()
 	}
 	return err
+}
+
+func (app *App) ProfileList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var resp msg.ProfileListResponse
+	resp.Profiles, err = app.profiles.ListProfiles()
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "failed to ListProfiles: %v", err)
+		return
+	}
+
+	w.WriteHeader(200)
+	enc := json.NewEncoder(w)
+	enc.Encode(resp)
 }
 
 func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

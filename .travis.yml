@@ -3,6 +3,7 @@ language: go
 env:
   - PATH=$PATH:$GOPATH/bin
 before_install:
+  - sudo apt-get install graphviz
   - go get github.com/mattn/goveralls
 install:
   - go get -t ./...
