@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	_ "net/http/pprof"
@@ -76,8 +77,10 @@ func TestCPUHeaderWithSymbolizer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to send profile web request (%q): %v", req.URL, err)
 	}
+	defer resp.Body.Close()
 	if exp, got := 200, resp.StatusCode; exp != got {
-		t.Fatalf("profiles web reqest status code not as expected (%q): exp: %d, got: %d", req.URL, exp, got)
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("profiles web reqest status code not as expected (%q): exp: %d, got: %d\nresp body: %v", req.URL, exp, got, string(b))
 	}
 	_, err = goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
