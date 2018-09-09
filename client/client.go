@@ -85,17 +85,19 @@ func (c *Client) SendProfile(ctx context.Context, name string, r io.Reader) (str
 	}
 
 	if presp.BinaryNeedsUpload {
-		var s string
+		var s interface{}
+
 		fp, err := os.Open(os.Args[0])
 		if err != nil {
 			return presp.ID, err
 		}
 		defer fp.Close()
+
 		resp, err = c.base.New().Put("binaries/").Path(c.binaryMD5).Body(fp).ReceiveSuccess(&s)
 		if err != nil {
 			return presp.ID, err
 		}
-		if exp, got := 204, resp.StatusCode; exp != got {
+		if exp, got := 200, resp.StatusCode; exp != got {
 			return presp.ID, fmt.Errorf("POST /binaries/:id returned unexpected status code: exp: %d, got: %d", exp, got)
 		}
 	}

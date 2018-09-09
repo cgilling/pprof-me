@@ -234,6 +234,8 @@ func (app *App) BinaryPUT(w http.ResponseWriter, r *http.Request, ps httprouter.
 		fmt.Fprintf(w, `failed to store binary: %v`, err)
 		return
 	}
+	enc := json.NewEncoder(w)
+	enc.Encode(map[string]string{"msg": "success"})
 }
 
 func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
