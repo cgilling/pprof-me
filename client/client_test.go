@@ -38,6 +38,8 @@ func init() {
 		panic(fmt.Errorf("failed to create md5 of binary: %v", err))
 	}
 	binaryMD5 = hex.EncodeToString(h.Sum(nil))
+
+	fmt.Printf("binary MD5: %v", binaryMD5)
 }
 
 func TestClientWithSymbols(t *testing.T) {
@@ -126,7 +128,7 @@ func TestClientUploadsBinary(t *testing.T) {
 		t.Errorf("returned ID not as expected: exp: %v, got: %v", exp, got)
 	}
 
-	//ppme.AssertExpectations(t)
+	ppme.AssertExpectations(t)
 }
 
 func TestSendProfileReturnsErrorOnNon201Response(t *testing.T) {
