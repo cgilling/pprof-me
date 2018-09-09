@@ -1,8 +1,6 @@
-hash: 0c29a1bb4aaaf534305d9380756b56aa1538f557e06018c00a546f3df910482f
-updated: 2018-09-08T21:23:03.304934995-07:00
+hash: f28c41198987306f477a4720e320e3b0c04d6cb5fb141acaecbf571aaf9d3db3
+updated: 2018-09-09T15:21:02.158355685-07:00
 imports:
-- name: github.com/dankinder/httpmock
-  version: d60e3dc270c131fe0721dcc7f77db7f480bd76d9
 - name: github.com/dghubble/sling
   version: eb56e89ac5088bebb12eef3cb4b293300f43608b
 - name: github.com/google/go-querystring
@@ -24,9 +22,13 @@ imports:
   subpackages:
   - html
   - html/atom
+- name: k8s.io/client-go
+  version: 7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65
 testImports:
 - name: github.com/andybalholm/cascadia
   version: 901648c87902174f774fac311d7f176f8647bdaa
+- name: github.com/dankinder/httpmock
+  version: d60e3dc270c131fe0721dcc7f77db7f480bd76d9
 - name: github.com/davecgh/go-spew
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
   subpackages:
