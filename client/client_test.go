@@ -117,7 +117,8 @@ func TestClientUploadsBinary(t *testing.T) {
 
 	binMatch := mock.MatchedBy(func(arg []byte) bool { return reflect.DeepEqual(arg, bin) })
 	ppme.On("Handle", "PUT", fmt.Sprintf("/binaries/%s", binaryMD5), binMatch).Return(httpmock.Response{
-		Status: 204,
+		Status: 200,
+		Body:   httpmock.ToJSON(map[string]string{"msg": "all good"}),
 	})
 
 	id, err := c.SendProfile(context.Background(), "TestClientUploadsBinary", strings.NewReader("hellothere"))
@@ -154,7 +155,7 @@ func TestSendProfileReturnsErrorOnNon201Response(t *testing.T) {
 	ppme.AssertExpectations(t)
 }
 
-func TestSendProfileReturnsErrorOnNon204OnUploadBinary(t *testing.T) {
+func TestSendProfileReturnsErrorOnNon200OnUploadBinary(t *testing.T) {
 	ppme := &httpmock.MockHandler{}
 
 	s := httpmock.NewServer(ppme)
