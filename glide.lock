@@ -1,8 +1,10 @@
-hash: 1be588fd82242d028479eacc82437148196fdfeb5bd6b84c0eff2033acaa7f4c
-updated: 2018-09-08T15:17:34.152628675-07:00
+hash: 0c29a1bb4aaaf534305d9380756b56aa1538f557e06018c00a546f3df910482f
+updated: 2018-09-08T21:23:03.304934995-07:00
 imports:
+- name: github.com/dankinder/httpmock
+  version: d60e3dc270c131fe0721dcc7f77db7f480bd76d9
 - name: github.com/dghubble/sling
-  version: c519674860ff275e0ceb12caf5d87b31765c4e71
+  version: eb56e89ac5088bebb12eef3cb4b293300f43608b
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
@@ -10,9 +12,9 @@ imports:
 - name: github.com/google/uuid
   version: e704694aed0ea004bb7eb1fc2e911d048a54606a
 - name: github.com/julienschmidt/httprouter
-  version: 348b672cd90d8190f8240323e372ecd1e66b59dc
+  version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
 - name: github.com/kelseyhightower/envconfig
-  version: dd1402a4d99de9ac2f396cd6fcb957bc2c695ec1
+  version: f611eb38b3875cc3bd991ca91c51d06446afa14c
 - name: github.com/kennygrant/sanitize
   version: 06ec0d0dbcd497d01e5189b16f5263f712e61a8e
 - name: github.com/pborman/uuid
@@ -25,8 +27,6 @@ imports:
 testImports:
 - name: github.com/andybalholm/cascadia
   version: 901648c87902174f774fac311d7f176f8647bdaa
-- name: github.com/dankinder/httpmock
-  version: d60e3dc270c131fe0721dcc7f77db7f480bd76d9
 - name: github.com/davecgh/go-spew
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
   subpackages:
