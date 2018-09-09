@@ -1,11 +1,6 @@
-FROM golang:1.9.4
+FROM golang:1.10.4
 WORKDIR /go/src/github.com/cgilling/pprof-me
 RUN CGO_ENABLED=0 GOOS=linux go get github.com/google/pprof
-RUN go get -d -v \
-				 github.com/julienschmidt/httprouter \
-				 github.com/kelseyhightower/envconfig \
-				 github.com/kennygrant/sanitize \
-				 github.com/pborman/uuid
 COPY . ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o pprof-me .
