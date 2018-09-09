@@ -9,5 +9,4 @@ install:
   - go get -t ./...
   - go get github.com/google/pprof
 script:
-#  - $GOPATH/bin/goveralls -service=travis-ci
-  - go test -v ./...
+  - $GOPATH/bin/goveralls -service=travis-ci
