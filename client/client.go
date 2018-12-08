@@ -25,17 +25,7 @@ type Client struct {
 	base      *sling.Sling
 	urlPrefix string
 	binaryMD5 string
-
-	SymbolURL string
 }
-
-/*
-type Config struct {
-	Doer       Doer
-	URLPrefix  string
-	SymbolPath string
-}
-*/
 
 func New(urlPrefix string, d Doer) (*Client, error) {
 	if d == nil {
@@ -71,9 +61,6 @@ func (c *Client) SendProfile(ctx context.Context, name string, r io.Reader) (str
 		BinaryName: filepath.Base(os.Args[0]),
 		BinaryMD5:  c.binaryMD5,
 	}
-	if c.SymbolURL != "" {
-		preq.SymoblizerURL = c.SymbolURL
-	}
 
 	var presp msg.ProfilePostResponse
 	resp, err := c.base.New().Post("profiles").BodyJSON(preq).ReceiveSuccess(&presp)
@@ -82,24 +69,6 @@ func (c *Client) SendProfile(ctx context.Context, name string, r io.Reader) (str
 	}
 	if exp, got := 201, resp.StatusCode; exp != got {
 		return "", fmt.Errorf("POST /profiles returned unexpected status code: exp: %d, got: %d", exp, got)
-	}
-
-	if presp.BinaryNeedsUpload {
-		var s interface{}
-
-		fp, err := os.Open(os.Args[0])
-		if err != nil {
-			return presp.ID, err
-		}
-		defer fp.Close()
-
-		resp, err = c.base.New().Put("binaries/").Path(c.binaryMD5).Body(fp).ReceiveSuccess(&s)
-		if err != nil {
-			return presp.ID, err
-		}
-		if exp, got := 200, resp.StatusCode; exp != got {
-			return presp.ID, fmt.Errorf("POST /binaries/:id returned unexpected status code: exp: %d, got: %d", exp, got)
-		}
 	}
 	return presp.ID, nil
 }
