@@ -53,8 +53,7 @@ func TestCPUProfile(t *testing.T) {
 	}
 
 	msgResp := msg.ProfilePostResponse{
-		ID:                "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
-		BinaryNeedsUpload: false,
+		ID: "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
 	}
 
 	// TODO: we need to figure out how to test that this is a CPU profile rather than
@@ -88,12 +87,10 @@ func TestHeapProfile(t *testing.T) {
 	}
 
 	msgResp := msg.ProfilePostResponse{
-		ID:                "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
-		BinaryNeedsUpload: false,
+		ID: "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
 	}
 	msgResp2 := msg.ProfilePostResponse{
-		ID:                "02A89E6F-6652-4B0A-B6E4-1383069E9CFA",
-		BinaryNeedsUpload: false,
+		ID: "02A89E6F-6652-4B0A-B6E4-1383069E9CFA",
 	}
 
 	// TODO: we need to figure out how to test that this is a MEM profile rather than

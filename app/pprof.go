@@ -9,11 +9,8 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sync/atomic"
 	"time"
-
-	"github.com/kennygrant/sanitize"
 )
 
 type PProfInstance struct {
@@ -22,8 +19,8 @@ type PProfInstance struct {
 	isActive int64
 }
 
-func NewPProfInstance(pprofProfileURL, pathPrefix, id string, port int, profiles ProfileStore) (*PProfInstance, error) {
-	runner, err := NewPProfRunner(pprofProfileURL, port, id, profiles)
+func NewPProfInstance(pprofProfileURL, pathPrefix, id string, port int) (*PProfInstance, error) {
+	runner, err := NewPProfRunner(pprofProfileURL, port, id)
 	if err != nil {
 		return nil, err
 	}
@@ -52,52 +49,26 @@ func (ppi *PProfInstance) CheckIsActive() bool {
 }
 
 type PProfRunner struct {
-	Port     int
-	Profiles ProfileStore
+	Port int
 
 	StartTime  time.Time
 	Cmd        *exec.Cmd
 	TmpDirPath string
 }
 
-func NewPProfRunner(pprofProfileURL string, port int, id string, profiles ProfileStore) (*PProfRunner, error) {
+func NewPProfRunner(pprofProfileURL string, port int, id string) (*PProfRunner, error) {
 	tmpDirPath, err := ioutil.TempDir("", fmt.Sprintf("pprof-me-%s", id))
 	if err != nil {
 		return nil, err
 	}
-	cmd, err := func() (*exec.Cmd, error) {
-		if profiles.HasSymbols(id) {
-			return exec.Command("pprof", "-symbolize=remote", fmt.Sprintf("-http=127.0.0.1:%d", port), pprofProfileURL), nil
-		} else {
-			name, binary, err := profiles.GetBinary(id)
-			if err != nil {
-				return nil, err
-			}
-			profile, err := profiles.GetProfile(id)
-			if err != nil {
-				return nil, err
-			}
-
-			binPath := filepath.Join(tmpDirPath, sanitize.Name(name))
-			err = ioutil.WriteFile(binPath, binary, 0700)
-			if err != nil {
-				return nil, err
-			}
-			profilePath := filepath.Join(tmpDirPath, "profile")
-			err = ioutil.WriteFile(profilePath, profile, 0700)
-			if err != nil {
-				return nil, err
-			}
-			return exec.Command("pprof", fmt.Sprintf("-http=127.0.0.1:%d", port), binPath, profilePath), nil
-		}
-	}()
+	cmd, err := exec.Command("pprof", fmt.Sprintf("-http=127.0.0.1:%d", port), pprofProfileURL), nil
 	if err != nil {
 		os.RemoveAll(tmpDirPath)
+		return nil, err
 	}
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PPROF_TMPDIR=%s", tmpDirPath))
 	pr := &PProfRunner{
 		Port:       port,
-		Profiles:   profiles,
 		Cmd:        cmd,
 		TmpDirPath: tmpDirPath,
 	}
