@@ -6,10 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -42,46 +40,7 @@ func init() {
 	fmt.Printf("binary MD5: %v\n", binaryMD5)
 }
 
-func TestClientWithSymbols(t *testing.T) {
-	ppme := &httpmock.MockHandler{}
-
-	s := httpmock.NewServer(ppme)
-	defer s.Close()
-
-	c, err := New(s.URL(), nil)
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
-	c.SymbolURL = "http://me/custom/symbols"
-
-	msgResp := msg.ProfilePostResponse{
-		ID:                "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
-		BinaryNeedsUpload: false,
-	}
-	msgReq := msg.ProfilePostRequest{
-		Profile:       []byte("hellothere"),
-		BinaryName:    filepath.Base(os.Args[0]),
-		BinaryMD5:     binaryMD5,
-		SymoblizerURL: c.SymbolURL,
-	}
-
-	ppme.On("Handle", "POST", "/profiles", httpmock.JSONMatcher(&msgReq)).Return(httpmock.Response{
-		Status: 201,
-		Body:   httpmock.ToJSON(msgResp),
-	})
-
-	id, err := c.SendProfile(context.Background(), "TestClientWithSymbols", strings.NewReader("hellothere"))
-	if err != nil {
-		t.Fatalf("failed to SendProfile: %v", err)
-	}
-	if exp, got := msgResp.ID, id; exp != got {
-		t.Errorf("returned ID not as expected: exp: %v, got: %v", exp, got)
-	}
-
-	ppme.AssertExpectations(t)
-}
-
-func TestClientUploadsBinary(t *testing.T) {
+func TestClientUploadProfile(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -96,8 +55,7 @@ func TestClientUploadsBinary(t *testing.T) {
 	}
 
 	msgResp := msg.ProfilePostResponse{
-		ID:                "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
-		BinaryNeedsUpload: true,
+		ID: "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
 	}
 	msgReq := msg.ProfilePostRequest{
 		Profile:    []byte("hellothere"),
@@ -110,18 +68,7 @@ func TestClientUploadsBinary(t *testing.T) {
 		Body:   httpmock.ToJSON(msgResp),
 	})
 
-	bin, err := ioutil.ReadFile(os.Args[0])
-	if err != nil {
-		t.Fatalf("failed to read binary: %v", err)
-	}
-
-	binMatch := mock.MatchedBy(func(arg []byte) bool { return reflect.DeepEqual(arg, bin) })
-	ppme.On("Handle", "PUT", fmt.Sprintf("/binaries/%s", binaryMD5), binMatch).Return(httpmock.Response{
-		Status: 200,
-		Body:   httpmock.ToJSON(map[string]string{"msg": "all good"}),
-	})
-
-	id, err := c.SendProfile(context.Background(), "TestClientUploadsBinary", strings.NewReader("hellothere"))
+	id, err := c.SendProfile(context.Background(), "TestClientUploadProfile", strings.NewReader("hellothere"))
 	if err != nil {
 		t.Fatalf("failed to SendProfile: %v", err)
 	}
@@ -150,47 +97,6 @@ func TestSendProfileReturnsErrorOnNon201Response(t *testing.T) {
 	_, err = c.SendProfile(context.Background(), "TestSendProfileReturnsErrorOnNon201Response", strings.NewReader("hellothere"))
 	if err == nil {
 		t.Errorf("expected SendProfile to return error but it didn't")
-	}
-
-	ppme.AssertExpectations(t)
-}
-
-func TestSendProfileReturnsErrorOnNon200OnUploadBinary(t *testing.T) {
-	ppme := &httpmock.MockHandler{}
-
-	s := httpmock.NewServer(ppme)
-	defer s.Close()
-
-	c, err := New(s.URL(), nil)
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
-
-	msgResp := msg.ProfilePostResponse{
-		ID:                "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
-		BinaryNeedsUpload: true,
-	}
-	msgReq := msg.ProfilePostRequest{
-		Profile:    []byte("hellothere"),
-		BinaryName: filepath.Base(os.Args[0]),
-		BinaryMD5:  binaryMD5,
-	}
-
-	ppme.On("Handle", "POST", "/profiles", httpmock.JSONMatcher(&msgReq)).Return(httpmock.Response{
-		Status: 201,
-		Body:   httpmock.ToJSON(msgResp),
-	})
-
-	ppme.On("Handle", "PUT", fmt.Sprintf("/binaries/%s", binaryMD5), mock.Anything).Return(httpmock.Response{
-		Status: 500,
-	})
-
-	id, err := c.SendProfile(context.Background(), "TestSendProfileReturnsErrorOnNon204OnUploadBinary", strings.NewReader("hellothere"))
-	if err == nil {
-		t.Error("expected SendProfile to return error but it didn't")
-	}
-	if exp, got := msgResp.ID, id; exp != got {
-		t.Errorf("returned ID not as expected: exp: %v, got: %v", exp, got)
 	}
 
 	ppme.AssertExpectations(t)

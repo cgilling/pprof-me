@@ -1,22 +1,11 @@
 package app
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
-
-	"net/http"
-	"net/http/httptest"
 	_ "net/http/pprof"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
+/* TODO: redo this test, we not longer want to support storing the binary, because profiles
+		 now contain the symbol information in them.
 func TestPProfInstanceWithBinary(t *testing.T) {
 	id := "123456"
 
@@ -88,3 +77,4 @@ func TestPProfInstanceWithBinary(t *testing.T) {
 		t.Fatalf("status code not as expected for non-existent page: exp: %d, got: %d", exp, got)
 	}
 }
+*/
