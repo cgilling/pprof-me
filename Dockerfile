@@ -2,7 +2,6 @@ FROM golang:1.10.4
 WORKDIR /go/src/github.com/cgilling/pprof-me
 RUN CGO_ENABLED=0 GOOS=linux go get github.com/google/pprof
 COPY . ./
-
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o pprof-me .
 
 FROM alpine:latest  

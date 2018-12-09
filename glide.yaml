@@ -10,6 +10,8 @@ import:
   version: ^1.2.4
 - package: github.com/pborman/uuid
   version: ^1.2.0
+- package: k8s.io/client-go
+  version: v8.0.0
 testImport:
 - package: github.com/dankinder/httpmock
 - package: github.com/PuerkitoBio/goquery
