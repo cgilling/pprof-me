@@ -17,7 +17,7 @@ import (
 	"github.com/dghubble/sling"
 )
 
-func TestCPUHeaderWithSymbolizer(t *testing.T) {
+func TestCPUHeader(t *testing.T) {
 	config := app.Config{}
 	a, err := app.New(config)
 	if err != nil {
@@ -70,18 +70,18 @@ func TestCPUHeaderWithSymbolizer(t *testing.T) {
 	}
 
 	id := lresp.Profiles[0].ID
-	req, err = sbase.New().Get("profiles/").Path(fmt.Sprintf("%s/web", id)).Request()
+	req, err = sbase.New().Get("profiles/").Path(fmt.Sprintf("%s/ui", id)).Request()
 	if err != nil {
-		t.Fatalf("failed to create profile web request: %v", err)
+		t.Fatalf("failed to create profile ui request: %v", err)
 	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		t.Fatalf("failed to send profile web request (%q): %v", req.URL, err)
+		t.Fatalf("failed to send profile ui request (%q): %v", req.URL, err)
 	}
 	defer resp.Body.Close()
 	if exp, got := 200, resp.StatusCode; exp != got {
 		b, _ := ioutil.ReadAll(resp.Body)
-		t.Fatalf("profiles web reqest status code not as expected (%q): exp: %d, got: %d\nresp body: %v", req.URL, exp, got, string(b))
+		t.Fatalf("profiles ui reqest status code not as expected (%q): exp: %d, got: %d\nresp body: %v", req.URL, exp, got, string(b))
 	}
 	_, err = goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
