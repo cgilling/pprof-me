@@ -1,5 +1,7 @@
 package msg
 
+import "time"
+
 type ProfileType string
 
 const (
@@ -25,9 +27,11 @@ type ProfilePostResponse struct {
 }
 
 type ProfileListResponse struct {
-	Profiles []ProfileInfo `json:"profiles"`
+	Profiles []ProfileListInfo `json:"profiles"`
 }
 
-type ProfileInfo struct {
-	ID string `json:"id"`
+type ProfileListInfo struct {
+	ID        string    `json:"id"`
+	AppName   string    `json:"app_name"`
+	Timestamp time.Time `json:"timestamp"`
 }

@@ -32,8 +32,11 @@ func TestListProfilesTwoProfiles(t *testing.T) {
 	f := NewFixture(t)
 	defer f.Cleanup()
 
-	f.App.profiles.StoreProfile("profile1", []byte("profile1"), store.ProfileMetadata{})
-	f.App.profiles.StoreProfile("profile2", []byte("profile2"), store.ProfileMetadata{})
+	id1 := f.App.profiles.CreateID("testApp")
+	id2 := f.App.profiles.CreateID("testApp")
+
+	f.App.profiles.StoreProfile(id1, []byte("profile1"), store.ProfileMetadata{})
+	f.App.profiles.StoreProfile(id2, []byte("profile2"), store.ProfileMetadata{})
 
 	sbase := sling.New().Base("http://" + f.App.Addr())
 	var lresp msg.ProfileListResponse
@@ -47,7 +50,7 @@ func TestListProfilesTwoProfiles(t *testing.T) {
 	if exp, got := 2, len(lresp.Profiles); exp != got {
 		t.Fatalf("profile count not as expected: exp: %d, got: %d", exp, got)
 	}
-	expProfileIDs := map[string]bool{"profile1": false, "profile2": false}
+	expProfileIDs := map[string]bool{id1: false, id2: false}
 	for _, prof := range lresp.Profiles {
 		if _, ok := expProfileIDs[prof.ID]; !ok {
 			t.Errorf("profile returned with unexpected id: %v", prof.ID)

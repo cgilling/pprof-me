@@ -3,6 +3,8 @@ package kube
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/cgilling/pprof-me/reqproxy"
@@ -13,11 +15,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const DefaultAppNameLabel = "app"
+
 type Config struct {
 	InCluster      bool   `envconfig:"IN_CLUSTER"`
 	ConfigPath     string `envconfig:"CONFIG_PATH"`
 	PodLabelFilter string `envconfig:"POD_LABEL_FILTER"`
 	Namespace      string `envconfig:"NAMESPACE"`
+	AppNameLabel   string `envconfig:"APP_NAME_LABEL"`
 }
 
 type PodProvider struct {
@@ -26,6 +31,7 @@ type PodProvider struct {
 }
 
 type Pod struct {
+	AppName string
 	*corev1.Pod
 }
 
@@ -44,6 +50,9 @@ func NewPodProvider(c Config) (*PodProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+	if c.AppNameLabel == "" {
+		c.AppNameLabel = DefaultAppNameLabel
+	}
 	return &PodProvider{
 		config:    c,
 		clientset: clientset,
@@ -61,9 +70,20 @@ func (pp *PodProvider) GetPods() ([]Pod, error) {
 	var retVal []Pod
 	for _, pod := range pods.Items {
 		pod := pod
-		retVal = append(retVal, Pod{Pod: &pod})
+		myPod := Pod{Pod: &pod}
+		myPod.fillInAppName(pp.config.AppNameLabel)
+		retVal = append(retVal, myPod)
 	}
 	return retVal, nil
+}
+
+func (p *Pod) fillInAppName(label string) {
+	if val, ok := p.ObjectMeta.Labels[label]; ok {
+		p.AppName = val
+		return
+	}
+	imageName := p.Spec.Containers[0].Image
+	p.AppName = strings.Split(filepath.Base(imageName), ":")[0]
 }
 
 type KubeAPIProxy struct {

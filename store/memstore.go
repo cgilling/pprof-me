@@ -2,7 +2,9 @@ package store
 
 import (
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/cgilling/pprof-me/msg"
 	"github.com/google/uuid"
@@ -22,19 +24,32 @@ func NewMemStore() *MemStore {
 }
 
 func (ms *MemStore) CreateID(appName string) string {
-	id := uuid.New().String()
+	// TODO: we can switch this func to return an error, can do it with this,
+	//       and if an valid appName is not supplied
+	uid, _ := uuid.NewUUID()
+	id := uid.String()
 	ms.mu.Lock()
 	ms.meta[id] = ProfileMetadata{AppName: appName}
 	ms.mu.Unlock()
 	return id
 }
 
-func (ms *MemStore) ListProfiles() ([]msg.ProfileInfo, error) {
-	var resp []msg.ProfileInfo
+func (ms *MemStore) ListProfiles() ([]msg.ProfileListInfo, error) {
+	var resp []msg.ProfileListInfo
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 	for id := range ms.profiles {
-		resp = append(resp, msg.ProfileInfo{ID: id})
+		uid, err := uuid.Parse(id)
+		if err != nil {
+			log.Println(err)
+			// TODO: we should do some logging around this
+			continue
+		}
+		resp = append(resp, msg.ProfileListInfo{
+			ID:        id,
+			AppName:   ms.meta[id].AppName,
+			Timestamp: time.Unix(uid.Time().UnixTime()),
+		})
 	}
 	return resp, nil
 }

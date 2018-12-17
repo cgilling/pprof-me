@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os/exec"
@@ -15,12 +16,12 @@ import (
 	"github.com/cgilling/pprof-me/reqproxy"
 	"github.com/cgilling/pprof-me/store"
 	"github.com/julienschmidt/httprouter"
-	"github.com/pborman/uuid"
 )
 
 type Config struct {
-	ListenAddr string      `envconfig:"LISTEN_ADDR"`
-	Kube       kube.Config `envconfig:"KUBE"`
+	ListenAddr string          `envconfig:"LISTEN_ADDR"`
+	Kube       kube.Config     `envconfig:"KUBE"`
+	AWS        store.AWSConfig `envconfig:"AWS"`
 }
 
 type App struct {
@@ -54,9 +55,9 @@ func New(c Config) (*App, error) {
 		config:           c,
 		instances:        make(map[string]*PProfInstance),
 		nextInstancePort: 8888,
-		profiles:         store.NewMemStore(),
-		profileProxies:   make(map[string]reqproxy.RequestProxy),
-		listener:         ln,
+
+		profileProxies: make(map[string]reqproxy.RequestProxy),
+		listener:       ln,
 		Server: &http.Server{
 			Handler: router,
 		},
@@ -67,6 +68,15 @@ func New(c Config) (*App, error) {
 			return nil, err
 		}
 		router.GET("/kube/pods", app.KubePodsGET)
+	}
+
+	if c.AWS.BucketName != "" {
+		app.profiles, err = store.NewAWSStore(c.AWS)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		app.profiles = store.NewMemStore()
 	}
 
 	router.POST("/profiles", app.ProfilePOST)
@@ -179,7 +189,7 @@ func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePo
 	proxy := app.podProvider.NewProxy(pod, path)
 
 	var resp msg.ProfilePostResponse
-	resp.ID = uuid.New()
+	resp.ID = app.profiles.CreateID(pod.AppName)
 	app.proxiesMu.Lock()
 	app.profileProxies[resp.ID] = proxy
 	app.proxiesMu.Unlock()
@@ -235,14 +245,16 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		}
 		return
 	}
-
+	log.Printf("will get profile for: %v", id)
 	b, _, err := app.profiles.GetProfile(id)
 	if err != nil {
+		log.Println(err)
 		// TODO: differentiate between this and failure to read
 		w.WriteHeader(404)
 		fmt.Fprintf(w, "could not find profile for %q", id)
 		return
 	}
+	log.Println("got profile")
 	w.Write(b)
 }
 
