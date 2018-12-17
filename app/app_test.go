@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/cgilling/pprof-me/msg"
+	"github.com/cgilling/pprof-me/store"
 	"github.com/dghubble/sling"
 )
 
@@ -31,8 +32,8 @@ func TestListProfilesTwoProfiles(t *testing.T) {
 	f := NewFixture(t)
 	defer f.Cleanup()
 
-	f.App.profiles.StoreProfile("profile1", []byte("profile1"), ProfileMetadata{})
-	f.App.profiles.StoreProfile("profile2", []byte("profile2"), ProfileMetadata{})
+	f.App.profiles.StoreProfile("profile1", []byte("profile1"), store.ProfileMetadata{})
+	f.App.profiles.StoreProfile("profile2", []byte("profile2"), store.ProfileMetadata{})
 
 	sbase := sling.New().Base("http://" + f.App.Addr())
 	var lresp msg.ProfileListResponse

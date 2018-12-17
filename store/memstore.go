@@ -1,25 +1,12 @@
-package app
+package store
 
 import (
 	"fmt"
 	"sync"
 
 	"github.com/cgilling/pprof-me/msg"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
-
-type ProfileStore interface {
-	CreateID(appName string) string
-	ListProfiles() ([]msg.ProfileInfo, error)
-	StoreProfile(id string, profile []byte, meta ProfileMetadata) error
-	GetProfile(id string) (profile []byte, meta ProfileMetadata, err error)
-}
-
-type ProfileMetadata struct {
-	AppName   string
-	Version   string
-	BinaryMD5 string
-}
 
 type MemStore struct {
 	mu       sync.RWMutex
@@ -35,7 +22,7 @@ func NewMemStore() *MemStore {
 }
 
 func (ms *MemStore) CreateID(appName string) string {
-	id := uuid.New()
+	id := uuid.New().String()
 	ms.mu.Lock()
 	ms.meta[id] = ProfileMetadata{AppName: appName}
 	ms.mu.Unlock()

@@ -13,6 +13,7 @@ import (
 	"github.com/cgilling/pprof-me/kube"
 	"github.com/cgilling/pprof-me/msg"
 	"github.com/cgilling/pprof-me/reqproxy"
+	"github.com/cgilling/pprof-me/store"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pborman/uuid"
 )
@@ -29,7 +30,7 @@ type App struct {
 	config Config
 	router *httprouter.Router
 
-	profiles ProfileStore
+	profiles store.ProfileStore
 
 	instancesMu      sync.Mutex
 	instances        map[string]*PProfInstance
@@ -53,7 +54,7 @@ func New(c Config) (*App, error) {
 		config:           c,
 		instances:        make(map[string]*PProfInstance),
 		nextInstancePort: 8888,
-		profiles:         NewMemStore(),
+		profiles:         store.NewMemStore(),
 		profileProxies:   make(map[string]reqproxy.RequestProxy),
 		listener:         ln,
 		Server: &http.Server{
@@ -137,7 +138,7 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 	var resp msg.ProfilePostResponse
 	resp.ID = app.profiles.CreateID(req.AppName)
-	meta := ProfileMetadata{BinaryMD5: req.BinaryMD5}
+	meta := store.ProfileMetadata{BinaryMD5: req.BinaryMD5}
 	err = app.profiles.StoreProfile(resp.ID, req.Profile, meta)
 	if err != nil {
 		w.WriteHeader(500)
@@ -227,7 +228,7 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		delete(app.profileProxies, id)
 		app.proxiesMu.Unlock()
 
-		err = app.profiles.StoreProfile(id, profile, ProfileMetadata{})
+		err = app.profiles.StoreProfile(id, profile, store.ProfileMetadata{})
 		if err != nil {
 			fmt.Printf("failed to store profile: %v\n", err)
 			return
