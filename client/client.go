@@ -56,10 +56,13 @@ func (c *Client) SendProfile(ctx context.Context, name string, r io.Reader) (str
 	if err != nil {
 		return "", err
 	}
+	if name == "" {
+		name = filepath.Base(os.Args[0])
+	}
 	preq := msg.ProfilePostRequest{
-		Profile:    profile,
-		BinaryName: filepath.Base(os.Args[0]),
-		BinaryMD5:  c.binaryMD5,
+		Profile:   profile,
+		AppName:   name,
+		BinaryMD5: c.binaryMD5,
 	}
 
 	var presp msg.ProfilePostResponse

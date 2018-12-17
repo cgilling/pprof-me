@@ -5,31 +5,41 @@ import (
 	"sync"
 
 	"github.com/cgilling/pprof-me/msg"
+	"github.com/pborman/uuid"
 )
 
 type ProfileStore interface {
+	CreateID(appName string) string
 	ListProfiles() ([]msg.ProfileInfo, error)
-	StoreProfile(id string, profile []byte) error
-	StoreBinaryMD5(id, name, md5 string) error
-	GetProfile(id string) (profile []byte, err error)
+	StoreProfile(id string, profile []byte, meta ProfileMetadata) error
+	GetProfile(id string) (profile []byte, meta ProfileMetadata, err error)
+}
+
+type ProfileMetadata struct {
+	AppName   string
+	Version   string
+	BinaryMD5 string
 }
 
 type MemStore struct {
 	mu       sync.RWMutex
 	profiles map[string][]byte
-	binInfo  map[string]binInfo
+	meta     map[string]ProfileMetadata
 }
 
 func NewMemStore() *MemStore {
 	return &MemStore{
 		profiles: make(map[string][]byte),
-		binInfo:  make(map[string]binInfo),
+		meta:     make(map[string]ProfileMetadata),
 	}
 }
 
-type binInfo struct {
-	BinaryName string
-	MD5        string
+func (ms *MemStore) CreateID(appName string) string {
+	id := uuid.New()
+	ms.mu.Lock()
+	ms.meta[id] = ProfileMetadata{AppName: appName}
+	ms.mu.Unlock()
+	return id
 }
 
 func (ms *MemStore) ListProfiles() ([]msg.ProfileInfo, error) {
@@ -42,25 +52,21 @@ func (ms *MemStore) ListProfiles() ([]msg.ProfileInfo, error) {
 	return resp, nil
 }
 
-func (ms *MemStore) StoreProfile(id string, profile []byte) error {
+func (ms *MemStore) StoreProfile(id string, profile []byte, meta ProfileMetadata) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
+	meta.AppName = ms.meta[id].AppName
+	ms.meta[id] = meta
 	ms.profiles[id] = profile
 	return nil
 }
-func (ms *MemStore) StoreBinaryMD5(id, name, md5Str string) error {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
-	ms.binInfo[id] = binInfo{BinaryName: name, MD5: md5Str}
-	return nil
-}
 
-func (ms *MemStore) GetProfile(id string) ([]byte, error) {
+func (ms *MemStore) GetProfile(id string) ([]byte, ProfileMetadata, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 	b, ok := ms.profiles[id]
 	if !ok {
-		return nil, fmt.Errorf("failed to find profile for %q", id)
+		return nil, ProfileMetadata{}, fmt.Errorf("failed to find profile for %q", id)
 	}
-	return b, nil
+	return b, ms.meta[id], nil
 }

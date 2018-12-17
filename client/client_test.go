@@ -58,9 +58,9 @@ func TestClientUploadProfile(t *testing.T) {
 		ID: "23E3490F-9F1F-4A19-9EBB-07592A7A1ED0",
 	}
 	msgReq := msg.ProfilePostRequest{
-		Profile:    []byte("hellothere"),
-		BinaryName: filepath.Base(os.Args[0]),
-		BinaryMD5:  binaryMD5,
+		Profile:   []byte("hellothere"),
+		AppName:   filepath.Base(os.Args[0]),
+		BinaryMD5: binaryMD5,
 	}
 
 	ppme.On("Handle", "POST", "/profiles", httpmock.JSONMatcher(&msgReq)).Return(httpmock.Response{
@@ -68,7 +68,7 @@ func TestClientUploadProfile(t *testing.T) {
 		Body:   httpmock.ToJSON(msgResp),
 	})
 
-	id, err := c.SendProfile(context.Background(), "TestClientUploadProfile", strings.NewReader("hellothere"))
+	id, err := c.SendProfile(context.Background(), "", strings.NewReader("hellothere"))
 	if err != nil {
 		t.Fatalf("failed to SendProfile: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestSendProfileReturnsErrorOnNon201Response(t *testing.T) {
 		Status: 500,
 	})
 
-	_, err = c.SendProfile(context.Background(), "TestSendProfileReturnsErrorOnNon201Response", strings.NewReader("hellothere"))
+	_, err = c.SendProfile(context.Background(), "", strings.NewReader("hellothere"))
 	if err == nil {
 		t.Errorf("expected SendProfile to return error but it didn't")
 	}

@@ -136,8 +136,9 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 	var resp msg.ProfilePostResponse
-	resp.ID = uuid.New()
-	err = app.profiles.StoreProfile(resp.ID, req.Profile)
+	resp.ID = app.profiles.CreateID(req.AppName)
+	meta := ProfileMetadata{BinaryMD5: req.BinaryMD5}
+	err = app.profiles.StoreProfile(resp.ID, req.Profile, meta)
 	if err != nil {
 		w.WriteHeader(500)
 		fmt.Fprintf(w, "error storing profile: %v", err)
@@ -198,7 +199,7 @@ func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePo
 	// TODO: probably want to add in a `HasProfile` call, also we could consider having the
 	//		 request that uses the profileProxy actually be able to write success/failure in
 	//       the same hash rather than having to do another request here to the profile store.
-	if _, err = app.profiles.GetProfile(resp.ID); err != nil {
+	if _, _, err = app.profiles.GetProfile(resp.ID); err != nil {
 		w.WriteHeader(502)
 		fmt.Fprintf(w, "failed to fetch profile")
 		return
@@ -226,7 +227,7 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		delete(app.profileProxies, id)
 		app.proxiesMu.Unlock()
 
-		err = app.profiles.StoreProfile(id, profile)
+		err = app.profiles.StoreProfile(id, profile, ProfileMetadata{})
 		if err != nil {
 			fmt.Printf("failed to store profile: %v\n", err)
 			return
@@ -234,7 +235,7 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	b, err := app.profiles.GetProfile(id)
+	b, _, err := app.profiles.GetProfile(id)
 	if err != nil {
 		// TODO: differentiate between this and failure to read
 		w.WriteHeader(404)

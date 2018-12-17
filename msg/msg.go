@@ -8,10 +8,10 @@ const (
 )
 
 type ProfilePostRequest struct {
-	Profile    []byte              `json:"profile"`
-	BinaryName string              `json:"binary_name"`
-	BinaryMD5  string              `json:"binary_md5"`
-	Kube       *KubeProfileRequest `json:"kube"`
+	Profile   []byte              `json:"profile"`
+	AppName   string              `json:"binary_name"`
+	BinaryMD5 string              `json:"binary_md5"`
+	Kube      *KubeProfileRequest `json:"kube"`
 }
 
 type KubeProfileRequest struct {
