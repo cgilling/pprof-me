@@ -56,7 +56,7 @@ func NewAWSStore(config AWSConfig) (*AWSStore, error) {
 	}, nil
 }
 
-func (as *AWSStore) CreateID(appName string) string {
+func (as *AWSStore) CreateID(ctx context.Context, appName string) string {
 	// TODO: we can switch this func to return an error, can do it with this,
 	//       and if an valid appName is not supplied
 	uid, _ := uuid.NewUUID()
@@ -121,7 +121,7 @@ func parseID(id string) (appName string, uid uuid.UUID, err error) {
 	return string(appBytes), uid, nil
 }
 
-func (as *AWSStore) ListProfiles() ([]msg.ProfileListInfo, error) {
+func (as *AWSStore) ListProfiles(ctx context.Context) ([]msg.ProfileListInfo, error) {
 	var resp []msg.ProfileListInfo
 	input := &s3.ListObjectsInput{
 		Bucket:  aws.String(as.config.BucketName),
@@ -147,18 +147,10 @@ func (as *AWSStore) ListProfiles() ([]msg.ProfileListInfo, error) {
 	return resp, nil
 }
 
-func (as *AWSStore) StoreProfile(id string, profile []byte, meta ProfileMetadata) error {
+func (as *AWSStore) StoreProfile(ctx context.Context, id string, profile []byte, meta ProfileMetadata) error {
 	_, _, err := parseID(id)
 	if err != nil {
 		return err
-	}
-
-	ctx := context.Background()
-	timeout := 30 * time.Second
-	if timeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
 	}
 
 	// Uploads the object to S3. The Context will interrupt the request if the
@@ -174,18 +166,10 @@ func (as *AWSStore) StoreProfile(id string, profile []byte, meta ProfileMetadata
 	return nil
 }
 
-func (as *AWSStore) GetProfile(id string) ([]byte, ProfileMetadata, error) {
+func (as *AWSStore) GetProfile(ctx context.Context, id string) ([]byte, ProfileMetadata, error) {
 	appName, uid, err := parseID(id)
 	if err != nil {
 		return nil, ProfileMetadata{}, err
-	}
-
-	ctx := context.Background()
-	timeout := 10 * time.Second
-	if timeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
 	}
 
 	input := &s3.GetObjectInput{

@@ -29,14 +29,15 @@ func (f *Fixture) Cleanup() {
 }
 
 func TestListProfilesTwoProfiles(t *testing.T) {
+	ctx := context.Background()
 	f := NewFixture(t)
 	defer f.Cleanup()
 
-	id1 := f.App.profiles.CreateID("testApp")
-	id2 := f.App.profiles.CreateID("testApp")
+	id1 := f.App.profiles.CreateID(ctx, "testApp")
+	id2 := f.App.profiles.CreateID(ctx, "testApp")
 
-	f.App.profiles.StoreProfile(id1, []byte("profile1"), store.ProfileMetadata{})
-	f.App.profiles.StoreProfile(id2, []byte("profile2"), store.ProfileMetadata{})
+	f.App.profiles.StoreProfile(ctx, id1, []byte("profile1"), store.ProfileMetadata{})
+	f.App.profiles.StoreProfile(ctx, id2, []byte("profile2"), store.ProfileMetadata{})
 
 	sbase := sling.New().Base("http://" + f.App.Addr())
 	var lresp msg.ProfileListResponse

@@ -120,7 +120,7 @@ func (app *App) KubePodsGET(w http.ResponseWriter, r *http.Request, ps httproute
 func (app *App) ProfileList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var resp msg.ProfileListResponse
-	resp.Profiles, err = app.profiles.ListProfiles()
+	resp.Profiles, err = app.profiles.ListProfiles(r.Context())
 	if err != nil {
 		w.WriteHeader(500)
 		fmt.Fprintf(w, "failed to ListProfiles: %v", err)
@@ -134,6 +134,7 @@ func (app *App) ProfileList(w http.ResponseWriter, r *http.Request, ps httproute
 
 func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req msg.ProfilePostRequest
+	ctx := r.Context()
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&req)
 	if err != nil {
@@ -143,13 +144,13 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	if req.Kube != nil {
-		app.handleKubeProfileProxy(w, &req)
+		app.handleKubeProfileProxy(ctx, w, &req)
 		return
 	}
 	var resp msg.ProfilePostResponse
-	resp.ID = app.profiles.CreateID(req.AppName)
+	resp.ID = app.profiles.CreateID(ctx, req.AppName)
 	meta := store.ProfileMetadata{BinaryMD5: req.BinaryMD5}
-	err = app.profiles.StoreProfile(resp.ID, req.Profile, meta)
+	err = app.profiles.StoreProfile(ctx, resp.ID, req.Profile, meta)
 	if err != nil {
 		w.WriteHeader(500)
 		fmt.Fprintf(w, "error storing profile: %v", err)
@@ -161,7 +162,7 @@ func (app *App) ProfilePOST(w http.ResponseWriter, r *http.Request, ps httproute
 	enc.Encode(resp)
 }
 
-func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePostRequest) {
+func (app *App) handleKubeProfileProxy(ctx context.Context, w http.ResponseWriter, req *msg.ProfilePostRequest) {
 	pods, err := app.podProvider.GetPods()
 	if err != nil {
 		w.WriteHeader(500)
@@ -189,7 +190,7 @@ func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePo
 	proxy := app.podProvider.NewProxy(pod, path)
 
 	var resp msg.ProfilePostResponse
-	resp.ID = app.profiles.CreateID(pod.AppName)
+	resp.ID = app.profiles.CreateID(ctx, pod.AppName)
 	app.proxiesMu.Lock()
 	app.profileProxies[resp.ID] = proxy
 	app.proxiesMu.Unlock()
@@ -210,7 +211,7 @@ func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePo
 	// TODO: probably want to add in a `HasProfile` call, also we could consider having the
 	//		 request that uses the profileProxy actually be able to write success/failure in
 	//       the same hash rather than having to do another request here to the profile store.
-	if _, _, err = app.profiles.GetProfile(resp.ID); err != nil {
+	if _, _, err = app.profiles.GetProfile(ctx, resp.ID); err != nil {
 		w.WriteHeader(502)
 		fmt.Fprintf(w, "failed to fetch profile")
 		return
@@ -223,6 +224,7 @@ func (app *App) handleKubeProfileProxy(w http.ResponseWriter, req *msg.ProfilePo
 }
 
 func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
 	id := ps.ByName("id")
 	app.proxiesMu.Lock()
 	profileProxy := app.profileProxies[id]
@@ -238,7 +240,7 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		delete(app.profileProxies, id)
 		app.proxiesMu.Unlock()
 
-		err = app.profiles.StoreProfile(id, profile, store.ProfileMetadata{})
+		err = app.profiles.StoreProfile(ctx, id, profile, store.ProfileMetadata{})
 		if err != nil {
 			fmt.Printf("failed to store profile: %v\n", err)
 			return
@@ -246,7 +248,7 @@ func (app *App) PProfProfileGET(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 	log.Printf("will get profile for: %v", id)
-	b, _, err := app.profiles.GetProfile(id)
+	b, _, err := app.profiles.GetProfile(ctx, id)
 	if err != nil {
 		log.Println(err)
 		// TODO: differentiate between this and failure to read

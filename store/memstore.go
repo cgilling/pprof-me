@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -23,7 +24,7 @@ func NewMemStore() *MemStore {
 	}
 }
 
-func (ms *MemStore) CreateID(appName string) string {
+func (ms *MemStore) CreateID(ctx context.Context, appName string) string {
 	// TODO: we can switch this func to return an error, can do it with this,
 	//       and if an valid appName is not supplied
 	uid, _ := uuid.NewUUID()
@@ -34,7 +35,7 @@ func (ms *MemStore) CreateID(appName string) string {
 	return id
 }
 
-func (ms *MemStore) ListProfiles() ([]msg.ProfileListInfo, error) {
+func (ms *MemStore) ListProfiles(ctx context.Context) ([]msg.ProfileListInfo, error) {
 	var resp []msg.ProfileListInfo
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
@@ -54,7 +55,7 @@ func (ms *MemStore) ListProfiles() ([]msg.ProfileListInfo, error) {
 	return resp, nil
 }
 
-func (ms *MemStore) StoreProfile(id string, profile []byte, meta ProfileMetadata) error {
+func (ms *MemStore) StoreProfile(ctx context.Context, id string, profile []byte, meta ProfileMetadata) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	meta.AppName = ms.meta[id].AppName
@@ -63,7 +64,7 @@ func (ms *MemStore) StoreProfile(id string, profile []byte, meta ProfileMetadata
 	return nil
 }
 
-func (ms *MemStore) GetProfile(id string) ([]byte, ProfileMetadata, error) {
+func (ms *MemStore) GetProfile(ctx context.Context, id string) ([]byte, ProfileMetadata, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 	b, ok := ms.profiles[id]
