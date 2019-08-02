@@ -14,6 +14,11 @@ type ProfileStore interface {
 	GetProfile(ctx context.Context, id string) (profile []byte, meta ProfileMetadata, err error)
 }
 
+type ListProfilesFilter struct {
+	StartTime time.Time
+	EndTime   time.Time
+}
+
 type ProfileMetadata struct {
 	AppName   string
 	Version   string

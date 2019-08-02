@@ -49,16 +49,21 @@ func NewAWSStore(config AWSConfig) (*AWSStore, error) {
 	if err != nil {
 		return nil, err
 	}
+	extraConf := &aws.Config{}
+	if config.S3Endpoint != "" {
+		extraConf.Endpoint = &config.S3Endpoint
+		extraConf.S3ForcePathStyle = aws.Bool(true)
+	}
 	return &AWSStore{
 		config:   config,
 		sesssion: sess,
-		s3cli:    s3.New(sess, &aws.Config{Endpoint: &config.S3Endpoint}),
+		s3cli:    s3.New(sess, extraConf),
 	}, nil
 }
 
 func (as *AWSStore) CreateID(ctx context.Context, appName string) string {
-	// TODO: we can switch this func to return an error, can do it with this,
-	//       and if an valid appName is not supplied
+	// TODO: we can switch this func to return an error and if a valid app name
+	//		 is not supplied, then return an error
 	uid, _ := uuid.NewUUID()
 	id := uid.String()
 	appName = base64.URLEncoding.EncodeToString([]byte(appName))
@@ -153,8 +158,6 @@ func (as *AWSStore) StoreProfile(ctx context.Context, id string, profile []byte,
 		return err
 	}
 
-	// Uploads the object to S3. The Context will interrupt the request if the
-	// timeout expires.
 	_, err = as.s3cli.PutObjectWithContext(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(as.config.BucketName),
 		Key:    aws.String(id),

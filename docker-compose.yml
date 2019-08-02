@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4572:4572"
+
+#    ports:
+#      - "4567-4584:4567-4584"
+#      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
+    environment:
+      - SERVICES=s3
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - PORT_WEB_UI=${PORT_WEB_UI- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+#      - DOCKER_HOST=unix:///var/run/docker.sock
+#    volumes:
+#      - "/private${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+#      - "/var/run/docker.sock:/var/run/docker.sock"
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    network_mode: service:localstack
+    volumes:
+      - .:/go/src/github.com/cgilling/pprof-me
+    working_dir: /go/src/github.com/cgilling/pprof-me
+    environment:
+      - TEST_S3_ENDPOINT=http://localhost:4572/
+      - AWS_ACCESS_KEY_ID=key
+      - AWS_SECRET_ACCESS_KEY=secret
+      - AWS_REGION=us-west-1
+

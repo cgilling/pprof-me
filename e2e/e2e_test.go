@@ -4,21 +4,109 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	_ "net/http/pprof"
+	"net/url"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cgilling/pprof-me/app"
 	"github.com/cgilling/pprof-me/client"
 	"github.com/cgilling/pprof-me/msg"
+	"github.com/cgilling/pprof-me/store"
 	"github.com/dghubble/sling"
 )
 
+const (
+	s3BucketName = "pprof-me-test"
+)
+
+var (
+	useAWS     = false
+	s3Endpoint string
+)
+
+func init() {
+	s3Endpoint = os.Getenv("TEST_S3_ENDPOINT")
+	if s3Endpoint == "" {
+		return
+	}
+	url, err := url.Parse(s3Endpoint)
+	if err != nil {
+		panic("TEST_S3_ENDPOINT not a valid URL")
+	}
+	// NOTE: as we use localstack for testing, it can take some time to start up, so we need
+	//		 to make sure our tests will wait for it to start up before proceeding.
+	for i := 0; i < 20; i++ {
+		_, err := net.DialTimeout("tcp", url.Hostname()+":"+url.Port(), 5*time.Second)
+		if err == nil {
+			break
+		}
+		log.Println(err)
+		time.Sleep(time.Second)
+	}
+	s3cli := s3.New(session.Must(session.NewSession()), &aws.Config{
+		Endpoint:         aws.String(s3Endpoint),
+		S3ForcePathStyle: aws.Bool(true),
+	})
+	_, err = s3cli.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(s3BucketName)})
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeBucketAlreadyExists:
+				fallthrough
+			case s3.ErrCodeBucketAlreadyOwnedByYou:
+			default:
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
+	useAWS = true
+}
+
+func clearTestBucket(t *testing.T) {
+	s3cli := s3.New(session.Must(session.NewSession()), &aws.Config{
+		Endpoint:         aws.String(s3Endpoint),
+		S3ForcePathStyle: aws.Bool(true),
+	})
+	err := s3cli.ListObjectsPages(&s3.ListObjectsInput{Bucket: aws.String(s3BucketName)},
+		func(page *s3.ListObjectsOutput, lastPage bool) bool {
+			for _, obj := range page.Contents {
+				_, err := s3cli.DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(s3BucketName),
+					Key:    obj.Key,
+				})
+				if err != nil {
+					t.Fatalf("failed to delete existing file: %v", err)
+				}
+			}
+			return true
+		})
+	if err != nil {
+		t.Fatalf("failed to list objects in test bucket: %v", err)
+	}
+}
+
 func TestCPUHeader(t *testing.T) {
 	config := app.Config{}
+	if useAWS {
+		config.AWS = store.AWSConfig{
+			BucketName: s3BucketName,
+			S3Endpoint: s3Endpoint,
+		}
+		clearTestBucket(t)
+	}
 	a, err := app.New(config)
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
